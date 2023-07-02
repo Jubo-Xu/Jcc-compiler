@@ -1,0 +1,41 @@
+cmake_minimum_required(VERSION 3.5)
+project(JCC-Compiler)
+
+# Default to C99
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 99)
+endif()
+
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+#set(SECOND_TARGET_NAME do-test)
+#set(SECOND_SOURCE_FILE src/test.sh)
+set(SECOND_SOURCE_FILE src/test.sh)
+
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+# Copy the shell script file to the build directory
+#configure_file(${SECOND_SOURCE_FILE} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test.sh COPYONLY)
+file(COPY ${SECOND_SOURCE_FILE}
+     DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+     FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+# Set permissions to make the shell script executable
+# add_custom_target(
+#     TARGET ${SECOND_TARGET_NAME} POST_BUILD
+#     COMMAND ${CMAKE_COMMAND} -E chmod +x ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test.sh
+#     DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test.sh
+# )
+#execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${SECOND_SOURCE_FILE} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test.sh)
+#execute_process(COMMAND ${CMAKE_COMMAND} -E chmod +x ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test.sh)
+
+
+add_subdirectory (src)

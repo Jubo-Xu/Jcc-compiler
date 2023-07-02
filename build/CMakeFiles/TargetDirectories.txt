@@ -1,0 +1,5 @@
+/home/bobxu/JCC-Compiler/build/CMakeFiles/edit_cache.dir
+/home/bobxu/JCC-Compiler/build/CMakeFiles/rebuild_cache.dir
+/home/bobxu/JCC-Compiler/build/src/CMakeFiles/JCC.dir
+/home/bobxu/JCC-Compiler/build/src/CMakeFiles/edit_cache.dir
+/home/bobxu/JCC-Compiler/build/src/CMakeFiles/rebuild_cache.dir

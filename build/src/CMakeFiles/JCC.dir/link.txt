@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/JCC.dir/Jcc.cpp.o -o ../JCC 
