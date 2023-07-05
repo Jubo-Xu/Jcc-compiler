@@ -146,4 +146,6 @@ src/CMakeFiles/JCC.dir/Jcc.cpp.o: /home/bobxu/JCC-Compiler/src/Jcc.cpp \
  /usr/include/c++/11/bits/stl_uninitialized.h \
  /usr/include/c++/11/bits/stl_vector.h \
  /usr/include/c++/11/bits/stl_bvector.h \
- /usr/include/c++/11/bits/vector.tcc
+ /usr/include/c++/11/bits/vector.tcc \
+ /home/bobxu/JCC-Compiler/src/Token.hpp /usr/include/c++/11/sstream \
+ /usr/include/c++/11/bits/sstream.tcc /usr/include/c++/11/cstdarg
