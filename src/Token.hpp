@@ -9,28 +9,58 @@
 #include <sstream>
 #include <cstdarg>
 
+typedef enum{
+    TK_OPERATOR,
+    TK_NUM,
+    TK_EOF,
+} TokenKind;
+
+//typedef struct Token Token;
+struct Token{
+    TokenKind kind;
+    Token *next;
+    int val;
+    char *str;
+};
+
 template <typename T>
 class TOKEN{
-    private:
-        typedef enum{
-            TK_OPERATOR,
-            TK_NUM,
-            TK_EOF,
-        } TokenKind;
+    protected:
+        // typedef enum{
+        //     TK_OPERATOR,
+        //     TK_NUM,
+        //     TK_EOF,
+        // } TokenKind;
 
-        //typedef struct Token Token;
-        struct Token{
-            TokenKind kind;
-            Token *next;
-            T val;
-            char *str;
-        };
-        Token head;
-        Token *token;
-        char *user_input;
+        // //typedef struct Token Token;
+        // struct Token{
+        //     TokenKind kind;
+        //     Token *next;
+        //     T val;
+        //     char *str;
+        // };
+        // Token head;
+        // Token *token;
+        // char *user_input;
         
 
     public:
+        // typedef enum{
+        //     TK_OPERATOR,
+        //     TK_NUM,
+        //     TK_EOF,
+        // } TokenKind;
+
+        // //typedef struct Token Token;
+        // struct Token{
+        //     TokenKind kind;
+        //     Token *next;
+        //     T val;
+        //     char *str;
+        // };
+        Token head;
+        Token *token;
+        char *user_input;
         int pos = 0;
         TOKEN(char *p){
             user_input = p;
@@ -42,7 +72,7 @@ class TOKEN{
                     p++;
                     continue;
                 }
-                if(*p == '+' || *p == '-'){
+                if(*p == '+' || *p == '-'|| *p == '*' || *p == '/' || *p == '(' || *p == ')'){
                     Token *tok = new Token();
                     tok->kind = TK_OPERATOR;
                     tok->str = p;

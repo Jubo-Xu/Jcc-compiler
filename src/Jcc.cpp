@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include "Token.hpp"
+#include "Parser.hpp"
 
 
 int main(int argc, char** argv){
@@ -12,14 +13,17 @@ int main(int argc, char** argv){
         return 1;
     }
 
-    TOKEN<int> Tok(argv[1]);
+    //TOKEN<int> Tok(argv[1]);
+    PARSER<int> Parser(argv[1]);
 
     std::cout<<".intel_syntax noprefix\n";
     std::cout<<".globl main\n";
     std::cout<<"main:\n";
     // std::cout<<" mov rax, "<<std::atoi(argv[1])<<std::endl;
     // std::cout<<" ret\n";
-    Tok.Execute();
-    
+    //Tok.Execute();
+    Parser.stack_gen();
+    std::cout<<"    pop rax\n";
+    std::cout<<"    ret\n";
     return 0;
 }
