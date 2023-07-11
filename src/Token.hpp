@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <sstream>
 #include <cstdarg>
+#include <cstring>
 
 typedef enum{
     TK_OPERATOR,
@@ -21,6 +22,7 @@ struct Token{
     Token *next;
     int val;
     char *str;
+    int len;
 };
 
 template <typename T>
@@ -72,15 +74,41 @@ class TOKEN{
                     p++;
                     continue;
                 }
+
                 if(*p == '+' || *p == '-'|| *p == '*' || *p == '/' || *p == '(' || *p == ')'){
                     Token *tok = new Token();
                     tok->kind = TK_OPERATOR;
                     tok->str = p;
+                    tok->len = 1;
                     cur->next = tok;
                     cur = cur->next;
                     p++;
                     continue;
                 }
+
+                if((*p == '=' && *(p+1) == '=')|| (*p == '!' && *(p+1) == '=') || (*p == '>' && *(p+1) == '=') || (*p == '<' && *(p+1) == '=')){
+                    Token *tok = new Token();
+                    tok->kind = TK_OPERATOR;
+                    tok->str = p;
+                    tok->len = 2;
+                    cur->next = tok;
+                    cur = cur->next;
+                    p+=2;
+                    continue;
+                }
+                
+                if(*p == '<' || *p == '>'){
+                    Token *tok = new Token();
+                    tok->kind = TK_OPERATOR;
+                    tok->str = p;
+                    tok->len = 1;
+                    cur->next = tok;
+                    cur = cur->next;
+                    p++;
+                    continue;
+                }
+
+                
 
                 if(std::isdigit(*p)){
                     Token *tok = new Token();
@@ -140,8 +168,43 @@ class TOKEN{
             std::exit(1);
         }
 
-        bool consume(char op){
+        bool consume_old(char op){
             if(token->kind != TK_OPERATOR || token->str[0] != op)
+                return false;
+            token = token->next;
+            pos++;
+            return true;
+        }
+        // bool consume(char *op){
+        //     if(token->kind != TK_OPERATOR || (sizeof(*op)/sizeof(char)) != token->len
+        //         || std::memcmp(token->str, op, token->len))
+        //         return false;
+        //     token = token->next;
+        //     pos++;
+        //     return true; 
+        // }
+        bool consume(char *op){
+            if(token->len == 1){
+                if(token->kind != TK_OPERATOR || (sizeof(*op)/sizeof(char)) != token->len || std::memcmp(token->str, op, token->len)){
+                    return false;}
+                token = token->next;
+                pos++;
+                return true; 
+            }
+            else{
+                if(token->kind != TK_OPERATOR || (sizeof(*op)/sizeof(char)-1) != token->len || ((token->str[0] != op[0]) && (token->str[1] != op[1]))){
+                    return false;}
+                token = token->next;
+                pos++;
+                return true; 
+            }
+            // token = token->next;
+            // pos++;
+            // return true; 
+        }
+
+        bool consume_str(std::string op){
+            if(token->kind != TK_OPERATOR || op.size() != token->len || (token->str[0] != op[0]))
                 return false;
             token = token->next;
             pos++;

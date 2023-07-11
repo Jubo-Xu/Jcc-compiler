@@ -19,6 +19,12 @@ class PARSER : public TOKEN<T>{
             ND_MUL, // *
             ND_DIV, // /
             ND_NUM, // number
+            ND_EQUAL, // ==
+            ND_NOTEQUAL, // !=
+            ND_LARGER, // >
+            ND_SMALLER, // <
+            ND_LARGEREQ, // >=
+            ND_SMALLEREQ, // <=
         } NodeKind;
 
         struct Node{
@@ -103,37 +109,146 @@ class PARSER : public TOKEN<T>{
             mul     = primary ('*' primary | '/' primary)*
             primary = num | '(' expr ')'
         */
-        // define the expr
-        Node *expr(){
-            Node *node_expr = mul();
+       template <typename Func>
+       Node *function(char op_1, char op_2, Func input_function){
+            Node *node_op = input_function();
             for(;;){
-                if(this->consume('+'))
-                    node_expr = new_node(ND_ADD, node_expr, mul());
-                else if(this->consume('-'))
-                    node_expr = new_node(ND_SUB, node_expr, mul());
+                if(this->consume(op_1))
+                    node_op = new_node(ND_ADD, node_op, input_function());
+                else if(this->consume(op_2))
+                    node_op = new_node(ND_SUB, node_op, input_function());
                 else
-                    return node_expr;
+                    return node_op;
+            }
+       }
+       
+        // define the expr
+        // Node *expr(){
+        //     Node *node_expr = mul();
+        //     for(;;){
+        //         if(this->consume('+'))
+        //             node_expr = new_node(ND_ADD, node_expr, mul());
+        //         else if(this->consume('-'))
+        //             node_expr = new_node(ND_SUB, node_expr, mul());
+        //         else
+        //             return node_expr;
+        //     }
+        // }
+        Node *expr(){
+            return equality();
+        }
+
+        // define the equality
+        Node *equality(){
+            Node *node_equality = relational();
+            for(;;){
+                //char equal[2] = {'=', '='};
+                //char notequal[2] = {'!', '='};
+                char *equal = "==";
+                char *notequal = "!=";
+                // std::string equal = "==";
+                // std::string notequal = "!=";
+                if(this->consume_str(equal))
+                    node_equality = new_node(ND_EQUAL, node_equality, relational());
+                else if(this->consume_str(notequal))
+                    node_equality = new_node(ND_NOTEQUAL, node_equality, relational());
+                else
+                    return node_equality;
             }
         }
 
-        // define the mul
-        Node *mul(){
-            Node *node_mul = primary();
+        // define the relational
+        Node *relational(){
+            Node *node_relational = add();
             for(;;){
-                if(this->consume('*'))
-                    node_mul = new_node(ND_MUL, node_mul, primary());
-                else if(this->consume('/'))
-                    node_mul = new_node(ND_DIV, node_mul, primary());
+                char smaller = '<';
+                //char smaller_eq[2] = {'<', '='};
+                char larger = '>';
+                //char larger_eq[2] = {'>', '='};
+                std::string smaller_eq = ">=";
+                std::string larger_eq = "<=";
+                if(this->consume(&smaller))
+                    node_relational = new_node(ND_SMALLER, node_relational, add());
+                else if(this->consume_str(smaller_eq))
+                    node_relational = new_node(ND_SMALLEREQ, node_relational, add());
+                else if(this->consume(&larger))
+                    node_relational = new_node(ND_LARGER, node_relational, add());
+                else if(this->consume_str(larger_eq))
+                    node_relational = new_node(ND_LARGEREQ, node_relational, add());
+                else
+                    return node_relational;
+            }
+        }
+
+        // define the add
+        Node *add(){
+            Node *node_add = mul();
+            for(;;){
+                char plus = '+';
+                char minus = '-';
+                if(this->consume(&plus))
+                    node_add = new_node(ND_ADD, node_add, mul());
+                else if(this->consume(&minus))
+                    node_add = new_node(ND_SUB, node_add, mul());
+                else
+                    return node_add;
+            }
+        }
+
+        // Node *expr(){
+        //     //return function(mul);
+        //     return function('+', '-', [this]() { return mul(); });
+        // }
+
+        // define the mul
+        // Node *mul(){
+        //     Node *node_mul = primary();
+        //     for(;;){
+        //         if(this->consume('*'))
+        //             node_mul = new_node(ND_MUL, node_mul, primary());
+        //         else if(this->consume('/'))
+        //             node_mul = new_node(ND_DIV, node_mul, primary());
+        //         else
+        //             return node_mul;
+        //     }
+        // }
+        Node *mul(){
+            Node *node_mul = unary();
+            for(;;){
+                char mul = '*';
+                char div = '/';
+                if(this->consume(&mul))
+                    node_mul = new_node(ND_MUL, node_mul, unary());
+                else if(this->consume(&div))
+                    node_mul = new_node(ND_DIV, node_mul, unary());
                 else
                     return node_mul;
             }
         }
+        // Node *mul(){
+        //     //return function(unary);
+        //     return function('*', '/', [this]() { return unary(); });
+        // }
+
+
+        // define the unary
+        Node *unary(){
+            char plus = '+';
+            char minus = '-';
+            if(this->consume(&plus))
+                return primary();
+            if(this->consume(&minus))
+                return new_node(ND_SUB, new_node_num(0), primary());
+            return primary();
+        }
 
         // define the primary
         Node *primary(){
-            if(this->consume('(')){
+            char left = '(';
+            char right = ')';
+            if(this->consume(&left)){
                 Node *node_primary = expr();
-                this->expect(')');
+                this->expect(right);
                 return node_primary;
             }
             return new_node_num(this->expect_number());
@@ -141,6 +256,8 @@ class PARSER : public TOKEN<T>{
 
         void Recursive_Descent_Parsing(){
             node = expr();
+            //node = expr(expr(unary()));
+            //return function([this]() { return function([this](){ return unary();}); });
         }
 
         // define the generator of the stack
@@ -170,6 +287,37 @@ class PARSER : public TOKEN<T>{
             case ND_DIV:
                 std::cout<<"    cqo\n";
                 std::cout<<"    idiv rdi\n";
+                break;
+            case ND_EQUAL:
+                std::cout<<"    cmp rax, rdi\n";
+                std::cout<<"    sete al\n";
+                std::cout<<"    movzb rax, al\n";
+                break;
+            case ND_NOTEQUAL:
+                std::cout<<"    cmp rax, rdi\n";
+                std::cout<<"    setne al\n";
+                std::cout<<"    movzb rax, al\n";
+                break;
+            case ND_LARGER:
+                std::cout<<"    cmp rdi, rax\n";
+                std::cout<<"    setl al\n";
+                std::cout<<"    movzb rax, al\n";
+                break;
+            case ND_LARGEREQ:
+                std::cout<<"    cmp rax, rdi\n";
+                std::cout<<"    setle al\n";
+                std::cout<<"    movzb rax, al\n";
+                break;
+            case ND_SMALLER:
+                std::cout<<"    cmp rax, rdi\n";
+                std::cout<<"    setl al\n";
+                std::cout<<"    movzb rax, al\n";
+                break;
+            case ND_SMALLEREQ:
+                std::cout<<"    cmp rdi, rax\n";
+                std::cout<<"    setle al\n";
+                std::cout<<"    movzb rax, al\n";
+                break;
             
             default:
                 break;
