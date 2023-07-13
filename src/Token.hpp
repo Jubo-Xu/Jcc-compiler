@@ -26,6 +26,13 @@ struct Token{
     int len;
 };
 
+struct LVar{
+    LVar *next;
+    char *name;
+    int len;
+    int offset;
+};
+
 template <typename T>
 class TOKEN{
     protected:
@@ -63,8 +70,11 @@ class TOKEN{
         // };
         Token head;
         Token *token;
+        LVar head_lvar;
+        LVar *locals;
         char *user_input;
         int pos = 0;
+        int iter_of_rval = 0;
         TOKEN(char *p){
             user_input = p;
             head.next = NULL;
@@ -120,11 +130,28 @@ class TOKEN{
                     continue;
                 }
 
+                // if('a' <= *p && *p <= 'z'){
+                //     Token *tok = new Token();
+                //     tok->kind = TK_IDENT;
+                //     tok->str = p;
+                //     tok->len = 1;
+                //     cur->next = tok;
+                //     cur = cur->next;
+                //     p++;
+                //     continue;
+                // }
+
                 if('a' <= *p && *p <= 'z'){
                     Token *tok = new Token();
                     tok->kind = TK_IDENT;
                     tok->str = p;
-                    tok->len = 1;
+
+                    int length = 1;
+                    while('a'<=*(p+1) && *(p+1)<='z'){
+                        length++;
+                        p++;
+                    }
+                    tok->len = length;
                     cur->next = tok;
                     cur = cur->next;
                     p++;
@@ -249,14 +276,54 @@ class TOKEN{
 
         char *consume_ident(){
             char *out;
-            if(token->kind != TK_IDENT || token->len != 1){
+            if(token->kind != TK_IDENT){
                 out[0] = '0';
                 return out;
             }
-            out[0] = token->str[0];
+            //out[0] = token->str[0];
+            out = token->str;
             token = token->next;
             pos++;
             return out;
+        }
+
+        bool check_ident(){
+            if(token->kind != TK_IDENT){
+                return false;
+            }
+            return true;
+        }
+
+        int find_lvar(){
+            if(!iter_of_rval){
+                return 0;
+            }
+            LVar *var = locals;
+            while(var){
+                if(var->len==token->len && std::memcmp(token->str, var->name, var->len)){
+                    iter_of_rval++;
+                    token = token->next;
+                    pos++;
+                    return var->offset;
+                }
+                var = var->next;
+            }
+            return 0;
+        }
+
+        int gen_new_lvar(){
+            int ofset;
+            LVar *lvar = new LVar();
+            lvar->next = locals;
+            lvar->name = token->str;
+            lvar->len = token->len;
+            lvar->offset = (!iter_of_rval) ? ((*(token->str) - 'a' + 1) * 8) : (locals->offset+8);
+            ofset = lvar->offset;
+            locals = lvar;
+            token = token->next;
+            pos++;
+            iter_of_rval++;
+            return ofset;
         }
 
         void expect(char op){
@@ -318,6 +385,7 @@ class TOKEN{
          ~TOKEN(){
             //delete &head;
             delete token;
+            delete locals;
         }
 
 };

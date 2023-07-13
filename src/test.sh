@@ -32,4 +32,6 @@ assert() {
 # assert 0 "2 >= 3"
 # assert 1 "(1+2) >= (1 * 1)"
 assert 3 "b=(1+2);"
+assert 3 "abc = (1+2);"
+assert 3 "abc = 1; abc = (1+2)*1/1;"
 echo OK

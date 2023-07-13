@@ -288,12 +288,21 @@ class PARSER : public TOKEN<T>{
                 this->expect(right);
                 return node_primary;
             }
-            char *ident = this->consume_ident();
-            if(ident[0] != '0'){
+            // char *ident = this->consume_ident();
+            // if(ident[0] != '0'){
+            //     Node *node_primary_2 = new Node();
+            //     node_primary_2->kind = ND_LVAR;
+            //     //node_primary_2->offset = (ident[0] - 'a' + 1) * 8;
+            //     node_primary_2->offset = (*ident - 'a' + 1) * 8;
+            //     //std::cerr<<"check: "<<node_primary_2->offset<<std::endl;
+            //     return node_primary_2;
+            // }
+
+            if(this->check_ident()){
                 Node *node_primary_2 = new Node();
                 node_primary_2->kind = ND_LVAR;
-                node_primary_2->offset = (ident[0] - 'a' + 1) * 8;
-                //std::cerr<<"check: "<<node_primary_2->offset<<std::endl;
+                int check_off = this->find_lvar();
+                node_primary_2->offset = (!check_off) ? this->gen_new_lvar() : check_off;
                 return node_primary_2;
             }
             //std::cerr<<"check: enter the number"<<std::endl;
