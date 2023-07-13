@@ -1,23 +1,23 @@
 .intel_syntax noprefix
 .globl main
 main:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 208
+    mov rax, rbp
+    sub rax, 16
+    push rax
     push 1
     push 2
     pop rdi
     pop rax
     add rax, rdi
     push rax
-    push 1
-    push 1
     pop rdi
     pop rax
-    imul rax, rdi
-    push rax
-    pop rdi
+    mov [rax], rdi
+    push rdi
     pop rax
-    cmp rdi, rax
-    setle al
-    movzb rax, al
-    push rax
-    pop rax
+    mov rsp, rbp
+    pop rbp
     ret

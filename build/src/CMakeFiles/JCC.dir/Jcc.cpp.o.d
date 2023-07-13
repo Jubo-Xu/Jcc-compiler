@@ -150,4 +150,5 @@ src/CMakeFiles/JCC.dir/Jcc.cpp.o: /home/bobxu/JCC-Compiler/src/Jcc.cpp \
  /home/bobxu/JCC-Compiler/src/Token.hpp /usr/include/c++/11/sstream \
  /usr/include/c++/11/bits/sstream.tcc /usr/include/c++/11/cstdarg \
  /usr/include/c++/11/cstring /usr/include/string.h /usr/include/strings.h \
- /home/bobxu/JCC-Compiler/src/Parser.hpp
+ /home/bobxu/JCC-Compiler/src/Parser.hpp \
+ /home/bobxu/JCC-Compiler/src/utils.hpp

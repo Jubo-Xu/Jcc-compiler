@@ -25,6 +25,8 @@ class PARSER : public TOKEN<T>{
             ND_SMALLER, // <
             ND_LARGEREQ, // >=
             ND_SMALLEREQ, // <=
+            ND_ASSIGN,
+            ND_LVAR,
         } NodeKind;
 
         struct Node{
@@ -32,6 +34,7 @@ class PARSER : public TOKEN<T>{
             Node *lhs;
             Node *rhs;
             T val;
+            int offset;
         };
 
         Node *node;
@@ -39,6 +42,9 @@ class PARSER : public TOKEN<T>{
         // Token head;
         // Token *token;
         // char *user_input;
+        Node *code[100];
+
+        int end = 0;
         
 
 
@@ -105,12 +111,19 @@ class PARSER : public TOKEN<T>{
         //////////////////////////////////////////////////////
         //////////// RECURSIVE DESCENT PARSING ///////////////
         /*------- EBNF of recursive grammars with precedence parentheses --------
-            expr    = mul ('+' mul | '-' mul)*
-            mul     = primary ('*' primary | '/' primary)*
-            primary = num | '(' expr ')'
+            program    = stmt*
+            stmt       = expr ";"
+            expr       = assign
+            assign     = equality ("=" assign)?
+            equality   = relational ("==" relational | "!=" relational)*
+            relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+            add        = mul ("+" mul | "-" mul)*
+            mul        = unary ("*" unary | "/" unary)*
+            unary      = ("+" | "-")? primary
+            primary    = num | ident | "(" expr ")"
         */
-       template <typename Func>
-       Node *function(char op_1, char op_2, Func input_function){
+        template <typename Func>
+        Node *function(char op_1, char op_2, Func input_function){
             Node *node_op = input_function();
             for(;;){
                 if(this->consume(op_1))
@@ -120,7 +133,22 @@ class PARSER : public TOKEN<T>{
                 else
                     return node_op;
             }
-       }
+        }
+
+        // define the program
+        void program(){
+            int i = 0;
+            while(!this->at_eof())
+                code[i++] = stmt();
+            code[i] = NULL;
+            end = i;
+        }
+        // define the stmt
+        Node *stmt(){
+            Node *node_stmt = expr();
+            this->expect(';');
+            return node_stmt;
+        }
        
         // define the expr
         // Node *expr(){
@@ -135,7 +163,16 @@ class PARSER : public TOKEN<T>{
         //     }
         // }
         Node *expr(){
-            return equality();
+            return assign();
+        }
+
+        // define the assign
+        Node *assign(){
+            Node *node_assign = equality();
+            char equal = '=';
+            if(this->consume(&equal))
+                node_assign = new_node(ND_ASSIGN, node_assign, assign());
+            return node_assign;
         }
 
         // define the equality
@@ -251,19 +288,83 @@ class PARSER : public TOKEN<T>{
                 this->expect(right);
                 return node_primary;
             }
+            char *ident = this->consume_ident();
+            if(ident[0] != '0'){
+                Node *node_primary_2 = new Node();
+                node_primary_2->kind = ND_LVAR;
+                node_primary_2->offset = (ident[0] - 'a' + 1) * 8;
+                //std::cerr<<"check: "<<node_primary_2->offset<<std::endl;
+                return node_primary_2;
+            }
+            //std::cerr<<"check: enter the number"<<std::endl;
             return new_node_num(this->expect_number());
+            
         }
 
         void Recursive_Descent_Parsing(){
-            node = expr();
+            //node = expr();
+            program();
             //node = expr(expr(unary()));
             //return function([this]() { return function([this](){ return unary();}); });
         }
 
         // define the generator of the stack
+        void gen_lval(Node *node_in){
+            if(node_in->kind != ND_LVAR){
+                //this->error("the variable at the left is not a left variable");
+                std::cerr<<"the variable at the left is not a left variable\n";
+                exit(1);
+            }    
+            std::cout<<"    mov rax, rbp\n";
+            std::cout<<"    sub rax, "<<node_in->offset<<"\n";
+            std::cout<<"    push rax\n";
+        }
         void gen(Node *node_in){
+            // if(node_in->kind == ND_NUM){
+            //     std::cout<<"    push "<<node_in->val<<"\n";
+            //     return;
+            // }
+            //std::cout<<"check: into gen"<<std::endl;
+            // switch (node_in->kind)
+            // {
+            // case ND_NUM:
+            //     std::cout<<"    push "<<node_in->val<<"\n";
+            //     return;
+            // case ND_LVAR:
+            //     std::cout<<"check: into ND_LVAR"<<std::endl;
+            //     gen_lval(node_in);
+            //     std::cout<<"    pop rax\n";
+            //     std::cout<<"    mov rax, [rax]\n";
+            //     std::cout<<"    push rax\n";
+            //     return;
+            // case ND_ASSIGN:
+            //     gen_lval(node_in->lhs);
+            //     gen(node_in->rhs);
+            //     std::cout<<"    pop rdi\n";
+            //     std::cout<<"    pop rax\n";
+            //     std::cout<<"    mov [rax], rdi\n";
+            //     std::cout<<"    push rdi\n";
+            //     return;
+            // }
             if(node_in->kind == ND_NUM){
                 std::cout<<"    push "<<node_in->val<<"\n";
+                return;
+            }
+            if(node_in->kind == ND_LVAR){
+                //std::cout<<"check: into ND_LVAR"<<std::endl;
+                gen_lval(node_in);
+                std::cout<<"    pop rax\n";
+                std::cout<<"    mov rax, [rax]\n";
+                std::cout<<"    push rax\n";
+                return;
+            }
+            if(node_in->kind == ND_ASSIGN){
+                gen_lval(node_in->lhs);
+                gen(node_in->rhs);
+                std::cout<<"    pop rdi\n";
+                std::cout<<"    pop rax\n";
+                std::cout<<"    mov [rax], rdi\n";
+                std::cout<<"    push rdi\n";
                 return;
             }
             gen(node_in->lhs);
@@ -328,7 +429,23 @@ class PARSER : public TOKEN<T>{
 
         void stack_gen(){
             Recursive_Descent_Parsing();
-            gen(node);
+            //gen(node);
+            //int i=0;
+            
+            // while(code[i] != NULL){
+            //     std::cerr<<"check: "<<i<<std::endl;
+            //     gen(code[i++]);
+            //     std::cout<<"    pop rax\n";
+            // }
+            for(int i=0; i<end; i++){
+                //std::cerr<<"check: "<<i<<std::endl;
+                gen(code[i]);
+                std::cout<<"    pop rax\n";
+            }
+            //std::cout<<"check: now is ok"<<std::endl;
+            // gen(code[0]);
+            // std::cout<<"    pop rax\n";
+            
         }
 
         void delete_node(Node* node_in) {
@@ -346,7 +463,11 @@ class PARSER : public TOKEN<T>{
             //delete this->token;
             //delete node;
             //delete_node(node);
-            delete node;
+            for(int i=0; i<end+1; i++){
+                delete code[i];
+            }
+            //delete code;
+            //delete node;
         }
 };
 

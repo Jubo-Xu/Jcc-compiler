@@ -12,6 +12,7 @@
 
 typedef enum{
     TK_OPERATOR,
+    TK_IDENT,
     TK_NUM,
     TK_EOF,
 } TokenKind;
@@ -75,6 +76,17 @@ class TOKEN{
                     continue;
                 }
 
+                if(*p == ';'){
+                    Token *tok = new Token();
+                    tok->kind = TK_OPERATOR;
+                    tok->str = p;
+                    tok->len = 1;
+                    cur->next = tok;
+                    cur = cur->next;
+                    p++;
+                    continue;
+                }
+                
                 if(*p == '+' || *p == '-'|| *p == '*' || *p == '/' || *p == '(' || *p == ')'){
                     Token *tok = new Token();
                     tok->kind = TK_OPERATOR;
@@ -107,6 +119,30 @@ class TOKEN{
                     p++;
                     continue;
                 }
+
+                if('a' <= *p && *p <= 'z'){
+                    Token *tok = new Token();
+                    tok->kind = TK_IDENT;
+                    tok->str = p;
+                    tok->len = 1;
+                    cur->next = tok;
+                    cur = cur->next;
+                    p++;
+                    continue;
+                }
+
+                if(*p == '='){
+                    Token *tok = new Token();
+                    tok->kind = TK_OPERATOR;
+                    tok->str = p;
+                    tok->len = 1;
+                    cur->next = tok;
+                    cur = cur->next;
+                    p++;
+                    continue;
+                }
+
+                
 
                 
 
@@ -209,6 +245,18 @@ class TOKEN{
             token = token->next;
             pos++;
             return true;
+        }
+
+        char *consume_ident(){
+            char *out;
+            if(token->kind != TK_IDENT || token->len != 1){
+                out[0] = '0';
+                return out;
+            }
+            out[0] = token->str[0];
+            token = token->next;
+            pos++;
+            return out;
         }
 
         void expect(char op){
