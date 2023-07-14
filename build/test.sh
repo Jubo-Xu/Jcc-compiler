@@ -34,4 +34,7 @@ assert() {
 assert 3 "b=(1+2);"
 assert 3 "abc = (1+2);"
 assert 3 "abc = 1; abc = (1+2)*1/1;"
+assert 3 "a = 1; b = 2; c = a + b;"
+assert 3 "a = 1; b = (1+1)*1/1; return a+b;"
+assert 3 "a = 1; b = 2 return a+b;"
 echo OK

@@ -27,6 +27,7 @@ class PARSER : public TOKEN<T>{
             ND_SMALLEREQ, // <=
             ND_ASSIGN,
             ND_LVAR,
+            ND_RETURN,
         } NodeKind;
 
         struct Node{
@@ -144,8 +145,21 @@ class PARSER : public TOKEN<T>{
             end = i;
         }
         // define the stmt
+        // Node *stmt(){
+        //     Node *node_stmt = expr();
+        //     this->expect(';');
+        //     return node_stmt;
+        // }
         Node *stmt(){
-            Node *node_stmt = expr();
+            Node *node_stmt;
+            if(this->consume_return()){
+                node_stmt = new Node();
+                node_stmt->kind = ND_RETURN;
+                node_stmt->lhs = expr();
+            }
+            else{
+                node_stmt = expr();
+            }
             this->expect(';');
             return node_stmt;
         }
@@ -302,7 +316,13 @@ class PARSER : public TOKEN<T>{
                 Node *node_primary_2 = new Node();
                 node_primary_2->kind = ND_LVAR;
                 int check_off = this->find_lvar();
-                node_primary_2->offset = (!check_off) ? this->gen_new_lvar() : check_off;
+                //node_primary_2->offset = (!check_off) ? this->gen_new_lvar() : check_off;
+                if(check_off == 0){
+                    node_primary_2->offset = this->gen_new_lvar();
+                }
+                else{
+                    node_primary_2->offset = check_off;
+                }
                 return node_primary_2;
             }
             //std::cerr<<"check: enter the number"<<std::endl;
@@ -374,6 +394,14 @@ class PARSER : public TOKEN<T>{
                 std::cout<<"    pop rax\n";
                 std::cout<<"    mov [rax], rdi\n";
                 std::cout<<"    push rdi\n";
+                return;
+            }
+            if(node_in->kind == ND_RETURN){
+                gen(node_in->lhs);
+                std::cout<<"    pop rax\n";
+                std::cout<<"    mov rsp, rbp\n";
+                std::cout<<"    pop rbp\n";
+                std::cout<<"    ret\n";
                 return;
             }
             gen(node_in->lhs);

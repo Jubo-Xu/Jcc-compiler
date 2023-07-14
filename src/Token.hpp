@@ -15,6 +15,7 @@ typedef enum{
     TK_IDENT,
     TK_NUM,
     TK_EOF,
+    TK_RETURN,
 } TokenKind;
 
 //typedef struct Token Token;
@@ -75,6 +76,17 @@ class TOKEN{
         char *user_input;
         int pos = 0;
         int iter_of_rval = 0;
+
+        bool is_alnum(char *p){
+            if(('a' <= *p && *p <= 'z') ||
+               ('A' <= *p && *p <= 'Z') ||
+               (*p == '_')){
+                    return true;
+               } 
+            else{
+                return false;
+            }
+        }
         TOKEN(char *p){
             user_input = p;
             head.next = NULL;
@@ -141,13 +153,41 @@ class TOKEN{
                 //     continue;
                 // }
 
-                if('a' <= *p && *p <= 'z'){
+                // if('a' <= *p && *p <= 'z'){
+                //     Token *tok = new Token();
+                //     tok->kind = TK_IDENT;
+                //     tok->str = p;
+
+                //     int length = 1;
+                //     while('a'<=*(p+1) && *(p+1)<='z'){
+                //         length++;
+                //         p++;
+                //     }
+                //     tok->len = length;
+                //     cur->next = tok;
+                //     cur = cur->next;
+                //     p++;
+                //     continue;
+                // }
+                if(*p=='r' && *(p+1)=='e' && *(p+2)=='t' && *(p+3)=='u' && *(p+4)=='r' && *(p+5)=='n' && !is_alnum(p+6)){
+                    Token *tok = new Token();
+                    tok->kind = TK_RETURN;
+                    tok->str = p;
+                    tok->len = 6;
+                    cur->next = tok;
+                    cur = cur->next;
+                    p+=6;
+                    continue;
+
+                }
+
+                if(is_alnum(p)){
                     Token *tok = new Token();
                     tok->kind = TK_IDENT;
                     tok->str = p;
 
                     int length = 1;
-                    while('a'<=*(p+1) && *(p+1)<='z'){
+                    while(is_alnum(p+1)){
                         length++;
                         p++;
                     }
@@ -157,6 +197,7 @@ class TOKEN{
                     p++;
                     continue;
                 }
+
 
                 if(*p == '='){
                     Token *tok = new Token();
@@ -204,6 +245,34 @@ class TOKEN{
         }
 
         void error_at(const char* loc, const char* fmt, ...) {
+            va_list ap;
+            va_start(ap, fmt);
+
+            int pos_2 = loc - user_input;
+
+            // Print the user_input string
+            std::cerr << user_input << std::endl;
+
+            // Print spaces up to the error location
+            //std::cerr << std::string(pos, ' ');
+            for (int i = 0; i < pos_2; i++) {
+                std::cerr << ' ';
+            }
+
+            // Print an arrow marker (^) at the error location
+            std::cerr << "^ ";
+
+            // Print the error message using the provided format and arguments
+            vfprintf(stderr, fmt, ap);
+            std::cerr << std::endl;
+            // Cleanup
+            va_end(ap);
+
+            // Exit the program with a non-zero status code to indicate an error
+            std::exit(1);
+        }
+
+        void error_at_2(const char* fmt, ...) {
             va_list ap;
             va_start(ap, fmt);
 
@@ -291,39 +360,80 @@ class TOKEN{
             if(token->kind != TK_IDENT){
                 return false;
             }
+            // std::cerr<<"iteration is: "<<iter_of_rval<<std::endl;
+            // std::cerr<<"check ident yes"<<std::endl;
             return true;
         }
 
         int find_lvar(){
+            
             if(!iter_of_rval){
+                //std::cerr<<"iteration is 0\n";
                 return 0;
             }
             LVar *var = locals;
+            // std::cerr<<"locals offset is: "<<var->offset<<std::endl;
+            // //std::cerr<<"locals name is: "<<var->name<<std::endl;
+            // std::cerr<<"locals len is: "<<var->len<<std::endl;
+            // std::cerr<<"locals name is: "<<var->name<<std::endl;
+            // std::cerr<<"tokens str is: "<<token->str<<std::endl;
+            int check = 0;
             while(var){
-                if(var->len==token->len && std::memcmp(token->str, var->name, var->len)){
+                if(var->len==token->len && !std::memcmp(token->str, var->name, var->len)){
                     iter_of_rval++;
                     token = token->next;
                     pos++;
+                    //std::cerr<<"not a new variable\n";
+                    //std::cerr<<"check is: "<<check<<std::endl;
                     return var->offset;
                 }
+                check++;
                 var = var->next;
             }
+            //std::cerr<<"new variable\n";
             return 0;
         }
 
         int gen_new_lvar(){
-            int ofset;
-            LVar *lvar = new LVar();
-            lvar->next = locals;
-            lvar->name = token->str;
-            lvar->len = token->len;
-            lvar->offset = (!iter_of_rval) ? ((*(token->str) - 'a' + 1) * 8) : (locals->offset+8);
-            ofset = lvar->offset;
-            locals = lvar;
+            //std::cerr<<"getting into gen_new_lvar\n";
+            if(!iter_of_rval){
+                int ofset;
+                locals = new LVar();
+                locals->name = token->str;
+                locals->len = token->len;
+                locals->offset = (*(token->str) - 'a' + 1) * 8;
+                ofset = locals->offset;
+                token = token->next;
+                pos++;
+                iter_of_rval++;
+                //std::cerr<<"offset of iteration 0 is: "<<ofset<<std::endl;
+                return ofset;
+            }
+            else{
+                int ofset;
+                LVar *lvar = new LVar();
+                lvar->next = locals;
+                lvar->name = token->str;
+                lvar->len = token->len;
+                lvar->offset = locals->offset+8;
+                //lvar->offset = (iter_of_rval==0) ? ((*(token->str) - 'a' + 1) * 8) : (locals->offset+8);
+                //std::cerr<<"offset is: "<<lvar->offset<<std::endl;
+                //lvar->offset = (*(token->str) - 'a' + 1) * 8;
+                ofset = lvar->offset;
+                locals = lvar;
+                token = token->next;
+                pos++;
+                iter_of_rval++;
+                return ofset;
+            }
+        }
+
+        bool consume_return(){
+            if(token->kind != TK_RETURN || token->len != 6)
+                return false;
             token = token->next;
             pos++;
-            iter_of_rval++;
-            return ofset;
+            return true;
         }
 
         void expect(char op){
@@ -337,8 +447,10 @@ class TOKEN{
             //   std::cerr << e.what() << std::endl;
             // }
             // pos++;
-            if(token->kind != TK_OPERATOR || token->str[0] != op)
-                error_at(token->str, "value not correct");
+            if(token->kind != TK_OPERATOR || token->str[0] != op){
+                if(op == ';')
+                    error_at(token->str, "missing ; ");
+                error_at(token->str, "value not correct");}
             token = token->next;
             pos++;
         }
