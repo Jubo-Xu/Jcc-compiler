@@ -9,6 +9,7 @@
 #include <sstream>
 #include <cstdarg>
 #include "Token.hpp"
+#include "utils.hpp"
 
 template <typename T>
 class PARSER : public TOKEN<T>{
@@ -30,6 +31,7 @@ class PARSER : public TOKEN<T>{
             ND_RETURN, // return
             ND_IF, // if
             ND_ELSE, // else
+            ND_WHILE, // while
         } NodeKind;
 
         struct Node{
@@ -48,6 +50,9 @@ class PARSER : public TOKEN<T>{
         Node *code[100];
 
         int end = 0;
+        int if_count = 0;
+        int else_count = 0;
+        int while_count = 0;
         
 
 
@@ -117,6 +122,7 @@ class PARSER : public TOKEN<T>{
             program    = stmt*
             stmt       = expr ";" | "return" expr ";"
                          | "if" "(" expr ")" stmt ("else" stmt)?
+                         | "while" "(" expr ")" stmt
             expr       = assign
             assign     = equality ("=" assign)?
             equality   = relational ("==" relational | "!=" relational)*
@@ -185,6 +191,14 @@ class PARSER : public TOKEN<T>{
                     node_stmt_rhs = new_node(ND_ELSE, node_stmt_rhs, stmt());
                 }
                 node_stmt->rhs = node_stmt_rhs;   
+            }
+            else if(this->consume_while()){
+                this->expect('(');
+                node_stmt = new Node();
+                node_stmt->kind = ND_WHILE;
+                node_stmt->lhs = expr();
+                this->expect(')');
+                node_stmt->rhs = stmt();
             }
             else{
                 node_stmt = expr();
@@ -435,22 +449,38 @@ class PARSER : public TOKEN<T>{
                 return;
             }
             if(node_in->kind == ND_IF){
+                if_count++;
                 gen(node_in->lhs);
                 std::cout<<"    pop rax\n";
                 std::cout<<"    cmp rax, 0\n";
                 Node *tmp = node_in->rhs;
                 if(tmp->kind == ND_ELSE){
-                    std::cout<<"    je  .LelseXXX\n";
+                    else_count++;
+                    //std::cout<<"    je  .LelseXXX\n";
+                    std::cout<<"    je  .Lelse"<<else_count<<"\n";
                     gen(tmp->lhs);
-                    std::cout<<"    jmp .LendXXX\n";
-                    std::cout<<"  .LelseXXX:\n";
+                    //std::cout<<"    jmp .LendXXX\n";
+                    std::cout<<"    jmp .Lendif"<<if_count<<"\n";
+                    //std::cout<<"  .LelseXXX:\n";
+                    std::cout<<"  .Lelse"<<else_count<<":\n";
                     gen(tmp->rhs);
                 }
                 else{
-                    std::cout<<"    je  .LendXXX:\n";
+                    //std::cout<<"    je  .LendXXX\n";
+                    std::cout<<"    je  .Lendif"<<if_count<<"\n";
                     gen(node_in->rhs);
                 }
-                std::cout<<"  .LendXXX:\n";
+                //std::cout<<"  .LendXXX:\n";
+                std::cout<<"  .Lendif"<<if_count<<":\n";
+                return;
+            }
+            if(node_in->kind == ND_WHILE){
+                while_count++;
+                Start_of_while(while_count);
+                gen(node_in->lhs);
+                Main_of_while(while_count);
+                gen(node_in->rhs);
+                End_of_while(while_count);
                 return;
             }
             gen(node_in->lhs);

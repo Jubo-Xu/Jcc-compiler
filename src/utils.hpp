@@ -23,4 +23,19 @@ void End_of_single_character_variable(){
     std::cout<<"    pop rbp\n";
     std::cout<<"    ret\n";
 }
+
+void Start_of_while(int count){
+    std::cout<<"  .Lbeginwhile"<<count<<":\n";
+}
+
+void Main_of_while(int count){
+    std::cout<<"    pop rax\n";
+    std::cout<<"    cmp rax, 0\n";
+    std::cout<<"    je  .Lendwhile"<<count<<"\n";
+}
+
+void End_of_while(int count){
+    std::cout<<"    jmp .Lbeginwhile"<<count<<"\n";
+    std::cout<<"  .Lendwhile"<<count<<":\n";
+}
 #endif
