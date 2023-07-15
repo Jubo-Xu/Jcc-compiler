@@ -32,12 +32,15 @@ class PARSER : public TOKEN<T>{
             ND_IF, // if
             ND_ELSE, // else
             ND_WHILE, // while
+            ND_FOR, // for
         } NodeKind;
 
         struct Node{
             NodeKind kind;
             Node *lhs;
             Node *rhs;
+            Node *for_mid;
+            Node *for_rhs;
             T val;
             int offset;
         };
@@ -53,6 +56,7 @@ class PARSER : public TOKEN<T>{
         int if_count = 0;
         int else_count = 0;
         int while_count = 0;
+        int for_count = 0;
         
 
 
@@ -63,6 +67,7 @@ class PARSER : public TOKEN<T>{
             node_out->kind = kind;
             node_out->lhs = lhs;
             node_out-> rhs = rhs;
+            
             return node_out;
         }
 
@@ -123,6 +128,7 @@ class PARSER : public TOKEN<T>{
             stmt       = expr ";" | "return" expr ";"
                          | "if" "(" expr ")" stmt ("else" stmt)?
                          | "while" "(" expr ")" stmt
+                         | "for" "(" expr? ";" expr? ";" expr? ")" stmt
             expr       = assign
             assign     = equality ("=" assign)?
             equality   = relational ("==" relational | "!=" relational)*
@@ -197,6 +203,22 @@ class PARSER : public TOKEN<T>{
                 node_stmt = new Node();
                 node_stmt->kind = ND_WHILE;
                 node_stmt->lhs = expr();
+                this->expect(')');
+                node_stmt->rhs = stmt();
+            }
+            else if(this->consume_for()){
+                this->expect('(');
+                node_stmt = new Node();
+                node_stmt->kind = ND_FOR;
+                node_stmt->lhs = expr();
+                this->expect(';');
+                //Node *node_stmt_lhs = node_stmt->lhs;
+                //node_stmt_lhs->lhs = expr();
+                node_stmt->for_mid = expr();
+                this->expect(';');
+                //node_stmt_lhs->rhs = expr();
+                node_stmt->for_rhs = expr();
+                //this->expect(';');
                 this->expect(')');
                 node_stmt->rhs = stmt();
             }
@@ -481,6 +503,21 @@ class PARSER : public TOKEN<T>{
                 Main_of_while(while_count);
                 gen(node_in->rhs);
                 End_of_while(while_count);
+                return;
+            }
+
+            if(node_in->kind == ND_FOR){
+                for_count++;
+                gen(node_in->lhs);
+                Start_of_for(for_count);
+                //Node *tmp_for = node_in->lhs;
+                //gen(tmp_for->lhs);
+                gen(node_in->for_mid);
+                Main_of_for(for_count);
+                gen(node_in->rhs);
+                //gen(tmp_for->rhs);
+                gen(node_in->for_rhs);
+                End_of_for(for_count);
                 return;
             }
             gen(node_in->lhs);

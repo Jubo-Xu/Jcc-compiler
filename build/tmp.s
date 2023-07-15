@@ -5,17 +5,25 @@ main:
     mov rbp, rsp
     sub rsp, 208
     mov rax, rbp
-    sub rax, 8
+    sub rax, 16
     push rax
-    push 1
+    push 0
     pop rdi
     pop rax
     mov [rax], rdi
     push rdi
     pop rax
-  .Lbeginwhile1:
     mov rax, rbp
-    sub rax, 8
+    sub rax, 24
+    push rax
+    push 0
+    pop rdi
+    pop rax
+    mov [rax], rdi
+    push rdi
+  .Lbeginfor1:
+    mov rax, rbp
+    sub rax, 24
     push rax
     pop rax
     mov rax, [rax]
@@ -29,12 +37,12 @@ main:
     push rax
     pop rax
     cmp rax, 0
-    je  .Lendwhile1
+    je  .Lendfor1
     mov rax, rbp
-    sub rax, 8
+    sub rax, 16
     push rax
     mov rax, rbp
-    sub rax, 8
+    sub rax, 16
     push rax
     pop rax
     mov rax, [rax]
@@ -48,49 +56,37 @@ main:
     pop rax
     mov [rax], rdi
     push rdi
-    jmp .Lbeginwhile1
-  .Lendwhile1:
-    pop rax
     mov rax, rbp
-    sub rax, 8
+    sub rax, 24
+    push rax
+    mov rax, rbp
+    sub rax, 24
     push rax
     pop rax
     mov rax, [rax]
-    push rax
-    push 3
-    pop rdi
-    pop rax
-    cmp rax, rdi
-    sete al
-    movzb rax, al
-    push rax
-    pop rax
-    cmp rax, 0
-    je  .Lelse1
-    mov rax, rbp
-    sub rax, 16
-    push rax
-    mov rax, rbp
-    sub rax, 8
-    push rax
-    pop rax
-    mov rax, [rax]
-    push rax
-    pop rdi
-    pop rax
-    mov [rax], rdi
-    push rdi
-    jmp .Lendif1
-  .Lelse1:
-    mov rax, rbp
-    sub rax, 16
     push rax
     push 1
     pop rdi
     pop rax
+    add rax, rdi
+    push rax
+    pop rdi
+    pop rax
     mov [rax], rdi
     push rdi
-  .Lendif1:
+    jmp .Lbeginfor1
+  .Lendfor1:
+    pop rax
+    mov rax, rbp
+    sub rax, 16
+    push rax
+    pop rax
+    mov rax, [rax]
+    push rax
+    pop rax
+    mov rsp, rbp
+    pop rbp
+    ret
     pop rax
     mov rsp, rbp
     pop rbp

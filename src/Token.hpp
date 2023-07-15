@@ -19,6 +19,7 @@ typedef enum{
     TK_IF,
     TK_ELSE,
     TK_WHILE,
+    TK_FOR,
 } TokenKind;
 
 //typedef struct Token Token;
@@ -227,6 +228,17 @@ class TOKEN{
                     cur->next = tok;
                     cur = cur->next;
                     p+=5;
+                    continue;
+                }
+
+                if(*p=='f' && *(p+1)=='o' && *(p+2)=='r' && !is_alnum(p+3)){
+                    Token *tok = new Token();
+                    tok->kind = TK_FOR;
+                    tok->str = p;
+                    tok->len = 3;
+                    cur->next = tok;
+                    cur = cur->next;
+                    p+=3;
                     continue;
                 }
 
@@ -503,6 +515,14 @@ class TOKEN{
 
         bool consume_while(){
             if(token->kind != TK_WHILE || token->len != 5)
+                return false;
+            token = token->next;
+            pos++;
+            return true;
+        }
+
+        bool consume_for(){
+            if(token->kind != TK_FOR || token->len != 3)
                 return false;
             token = token->next;
             pos++;

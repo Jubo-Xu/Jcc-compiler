@@ -41,4 +41,5 @@ assert 3 "a=1; if(a==1) b=3; else b=1;"
 assert 3 "a=1; if(a==2) b=1; b=3;"
 assert 3 "a=1; while(a<3) a=a+1; if(a==3) b=a; else b=1;"
 # assert 3 "a=1; if a==1) b=3; else b=1;"
+assert 3 "b=0; for(a=0; a<3; a=a+1) b=b +1; return b;"
 echo OK

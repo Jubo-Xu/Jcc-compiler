@@ -38,4 +38,19 @@ void End_of_while(int count){
     std::cout<<"    jmp .Lbeginwhile"<<count<<"\n";
     std::cout<<"  .Lendwhile"<<count<<":\n";
 }
+
+void Start_of_for(int count){
+    std::cout<<"  .Lbeginfor"<<count<<":\n";
+}
+
+void Main_of_for(int count){
+    std::cout<<"    pop rax\n";
+    std::cout<<"    cmp rax, 0\n";
+    std::cout<<"    je  .Lendfor"<<count<<"\n";
+}
+
+void End_of_for(int count){
+    std::cout<<"    jmp .Lbeginfor"<<count<<"\n";
+    std::cout<<"  .Lendfor"<<count<<":\n";
+}
 #endif
