@@ -25,9 +25,11 @@ class PARSER : public TOKEN<T>{
             ND_SMALLER, // <
             ND_LARGEREQ, // >=
             ND_SMALLEREQ, // <=
-            ND_ASSIGN,
-            ND_LVAR,
-            ND_RETURN,
+            ND_ASSIGN, // =
+            ND_LVAR, // left variable
+            ND_RETURN, // return
+            ND_IF, // if
+            ND_ELSE, // else
         } NodeKind;
 
         struct Node{
@@ -113,7 +115,8 @@ class PARSER : public TOKEN<T>{
         //////////// RECURSIVE DESCENT PARSING ///////////////
         /*------- EBNF of recursive grammars with precedence parentheses --------
             program    = stmt*
-            stmt       = expr ";"
+            stmt       = expr ";" | "return" expr ";"
+                         | "if" "(" expr ")" stmt ("else" stmt)?
             expr       = assign
             assign     = equality ("=" assign)?
             equality   = relational ("==" relational | "!=" relational)*
@@ -150,17 +153,44 @@ class PARSER : public TOKEN<T>{
         //     this->expect(';');
         //     return node_stmt;
         // }
+        // Node *stmt(){
+        //     Node *node_stmt;
+        //     if(this->consume_return()){
+        //         node_stmt = new Node();
+        //         node_stmt->kind = ND_RETURN;
+        //         node_stmt->lhs = expr();
+        //     }
+        //     else{
+        //         node_stmt = expr();
+        //     }
+        //     this->expect(';');
+        //     return node_stmt;
+        // }
         Node *stmt(){
             Node *node_stmt;
             if(this->consume_return()){
                 node_stmt = new Node();
                 node_stmt->kind = ND_RETURN;
                 node_stmt->lhs = expr();
+                this->expect(';');
+            }
+            else if(this->consume_if()){
+                this->expect('(');
+                node_stmt = new Node();
+                node_stmt->kind = ND_IF;
+                node_stmt->lhs = expr();
+                this->expect(')');
+                Node *node_stmt_rhs = stmt();
+                if(this->consume_else()){
+                    node_stmt_rhs = new_node(ND_ELSE, node_stmt_rhs, stmt());
+                }
+                node_stmt->rhs = node_stmt_rhs;   
             }
             else{
                 node_stmt = expr();
+                this->expect(';');
             }
-            this->expect(';');
+            
             return node_stmt;
         }
        
@@ -402,6 +432,25 @@ class PARSER : public TOKEN<T>{
                 std::cout<<"    mov rsp, rbp\n";
                 std::cout<<"    pop rbp\n";
                 std::cout<<"    ret\n";
+                return;
+            }
+            if(node_in->kind == ND_IF){
+                gen(node_in->lhs);
+                std::cout<<"    pop rax\n";
+                std::cout<<"    cmp rax, 0\n";
+                Node *tmp = node_in->rhs;
+                if(tmp->kind == ND_ELSE){
+                    std::cout<<"    je  .LelseXXX\n";
+                    gen(tmp->lhs);
+                    std::cout<<"    jmp .LendXXX\n";
+                    std::cout<<"  .LelseXXX:\n";
+                    gen(tmp->rhs);
+                }
+                else{
+                    std::cout<<"    je  .LendXXX:\n";
+                    gen(node_in->rhs);
+                }
+                std::cout<<"  .LendXXX:\n";
                 return;
             }
             gen(node_in->lhs);

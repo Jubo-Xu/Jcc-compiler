@@ -16,6 +16,8 @@ typedef enum{
     TK_NUM,
     TK_EOF,
     TK_RETURN,
+    TK_IF,
+    TK_ELSE,
 } TokenKind;
 
 //typedef struct Token Token;
@@ -179,6 +181,41 @@ class TOKEN{
                     p+=6;
                     continue;
 
+                }
+
+                if(*p=='i' && *(p+1)=='f' && !is_alnum(p+2)){
+                    Token *tok = new Token();
+                    tok->kind = TK_IF;
+                    tok->str = p;
+                    // p++;
+                    // while(std::isspace(*(p+1))){
+                    //     p++;
+                    //     continue;
+                    // }
+                    // if(*(p+1)!='('){
+                    //     error("Error: cannot tokenize\n");
+                    // }
+                    // tok->len = 2;
+                    // cur->next = tok;
+                    // cur = cur->next;
+                    // p++;
+                    tok->len = 2;
+                    cur->next = tok;
+                    cur = cur->next;
+                    p+=2;
+                    continue;
+
+                }
+
+                if(*p=='e' && *(p+1)=='l' && *(p+2)=='s' && *(p+3)=='e' && !is_alnum(p+4)){
+                    Token *tok = new Token();
+                    tok->kind = TK_ELSE;
+                    tok->str = p;
+                    tok->len = 4;
+                    cur->next = tok;
+                    cur = cur->next;
+                    p+=4;
+                    continue;
                 }
 
                 if(is_alnum(p)){
@@ -436,6 +473,22 @@ class TOKEN{
             return true;
         }
 
+        bool consume_if(){
+            if(token->kind != TK_IF || token->len != 2)
+                return false;
+            token = token->next;
+            pos++;
+            return true;
+        }
+
+        bool consume_else(){
+            if(token->kind != TK_ELSE || token->len != 4)
+                return false;
+            token = token->next;
+            pos++;
+            return true;
+        }
+
         void expect(char op){
             // try {
             //     if(token->kind != TK_OPERATOR || token->str[0] != op)
@@ -450,6 +503,10 @@ class TOKEN{
             if(token->kind != TK_OPERATOR || token->str[0] != op){
                 if(op == ';')
                     error_at(token->str, "missing ; ");
+                if(op == '(')
+                    error_at(token->str, "missing ( ");
+                if(op == ')')
+                    error_at(token->str, "missing ) ");
                 error_at(token->str, "value not correct");}
             token = token->next;
             pos++;
