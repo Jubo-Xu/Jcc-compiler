@@ -271,6 +271,17 @@ class TOKEN{
                     continue;
                 }
 
+                if(*p == '{' || *p == '}'){
+                    Token *tok = new Token();
+                    tok->kind = TK_OPERATOR;
+                    tok->str = p;
+                    tok->len = 1;
+                    cur->next = tok;
+                    cur = cur->next;
+                    p++;
+                    continue;
+                }
+
                 
 
                 
@@ -547,6 +558,10 @@ class TOKEN{
                     error_at(token->str, "missing ( ");
                 if(op == ')')
                     error_at(token->str, "missing ) ");
+                if(op == '{')
+                    error_at(token->str, "missing { ");
+                if(op == '}')
+                    error_at(token->str, "missing } ");
                 error_at(token->str, "value not correct");}
             token = token->next;
             pos++;

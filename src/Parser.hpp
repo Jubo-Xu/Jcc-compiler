@@ -33,14 +33,20 @@ class PARSER : public TOKEN<T>{
             ND_ELSE, // else
             ND_WHILE, // while
             ND_FOR, // for
+            ND_BLOCK, // {}
+            // ND_BLOCK_START, // {
+            // ND_BLOCK_END, // }
         } NodeKind;
 
         struct Node{
             NodeKind kind;
+            NodeKind kind_2;
             Node *lhs;
             Node *rhs;
             Node *for_mid;
             Node *for_rhs;
+            Node *block_node;
+            Node *block_next;
             T val;
             int offset;
         };
@@ -76,6 +82,13 @@ class PARSER : public TOKEN<T>{
             node_out->kind = ND_NUM;
             node_out->val = val;
             return node_out;
+        }
+
+        void new_node_block(Node *block, Node *next){
+            Node *node_out = new Node();
+            node_out->kind_2 = ND_BLOCK;
+            node_out->block_node = block;
+            next->block_next = node_out;
         }
 
         PARSER(char *p):TOKEN<T>(p){
@@ -129,6 +142,7 @@ class PARSER : public TOKEN<T>{
                          | "if" "(" expr ")" stmt ("else" stmt)?
                          | "while" "(" expr ")" stmt
                          | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+                         | "{" stmt* "}"
             expr       = assign
             assign     = equality ("=" assign)?
             equality   = relational ("==" relational | "!=" relational)*
@@ -158,6 +172,7 @@ class PARSER : public TOKEN<T>{
                 code[i++] = stmt();
             code[i] = NULL;
             end = i;
+            //std::cerr<<"number of nodes: "<<i<<"\n";
         }
         // define the stmt
         // Node *stmt(){
@@ -185,6 +200,7 @@ class PARSER : public TOKEN<T>{
                 node_stmt->kind = ND_RETURN;
                 node_stmt->lhs = expr();
                 this->expect(';');
+                //std::cerr<<"return get\n";
             }
             else if(this->consume_if()){
                 this->expect('(');
@@ -222,6 +238,44 @@ class PARSER : public TOKEN<T>{
                 this->expect(')');
                 node_stmt->rhs = stmt();
             }
+            else if(this->consume_old('{')){
+                node_stmt = new Node();
+                node_stmt->kind = ND_BLOCK;
+                // Node *node_tmp = new Node();
+                // node_tmp = node_stmt->block_next;
+                // node_tmp->kind_2 = ND_BLOCK;
+                Node *node_tmp = node_stmt;
+                node_tmp->kind_2 = ND_BLOCK;
+                // node_tmp->kind_2 = ND_BLOCK;
+                while(!this->consume_old('}')){
+                    // node_tmp->kind_2 = ND_BLOCK;
+                    // node_tmp->block = stmt();
+                    // node_tmp = node_tmp->block;
+                    new_node_block(stmt(), node_tmp);
+                    node_tmp = node_tmp->block_next;
+                    //node_tmp = new_node_block(stmt(), node_tmp);
+                    //std::cerr<<"expression finished\n";
+                }
+                //std::cerr<<"get out of the while loop\n";
+                // Node *check = node_stmt;
+                // int test = 0;
+                // while(check){
+                    
+                //     check = check->block_next;
+                //     std::cerr<<"check whether node_stmt is null: "<<test<<"\n";
+                //     test++;
+                // }
+            }
+            // else if(this->consume_old('{')){
+            //     node_stmt = new Node();
+            //     node_stmt->kind = ND_BLOCK_START;
+            //     node_stmt->rhs = stmt();
+            // }
+
+            // else if(this->consume_old('}')){
+            //     node_stmt = new Node();
+            //     node_stmt->kind = ND_BLOCK_END;
+            // }
             else{
                 node_stmt = expr();
                 this->expect(';');
@@ -470,30 +524,36 @@ class PARSER : public TOKEN<T>{
                 std::cout<<"    ret\n";
                 return;
             }
+
+            int if_count_2 = if_count;
             if(node_in->kind == ND_IF){
                 if_count++;
                 gen(node_in->lhs);
                 std::cout<<"    pop rax\n";
                 std::cout<<"    cmp rax, 0\n";
                 Node *tmp = node_in->rhs;
+                int else_count_2 = else_count;
                 if(tmp->kind == ND_ELSE){
                     else_count++;
                     //std::cout<<"    je  .LelseXXX\n";
-                    std::cout<<"    je  .Lelse"<<else_count<<"\n";
+                    std::cout<<"    je  .Lelse"<<else_count_2<<"\n";
+                    //std::cout<<"    je  .Lelse"<<if_count<<"\n";
                     gen(tmp->lhs);
                     //std::cout<<"    jmp .LendXXX\n";
-                    std::cout<<"    jmp .Lendif"<<if_count<<"\n";
+                    std::cout<<"    jmp .Lendif"<<if_count_2<<"\n";
                     //std::cout<<"  .LelseXXX:\n";
-                    std::cout<<"  .Lelse"<<else_count<<":\n";
+                    std::cout<<"  .Lelse"<<else_count_2<<":\n";
+                    //std::cout<<"  .Lelse"<<if_count<<":\n";
                     gen(tmp->rhs);
+                    
                 }
                 else{
                     //std::cout<<"    je  .LendXXX\n";
-                    std::cout<<"    je  .Lendif"<<if_count<<"\n";
+                    std::cout<<"    je  .Lendif"<<if_count_2<<"\n";
                     gen(node_in->rhs);
                 }
                 //std::cout<<"  .LendXXX:\n";
-                std::cout<<"  .Lendif"<<if_count<<":\n";
+                std::cout<<"  .Lendif"<<if_count_2<<":\n";
                 return;
             }
             if(node_in->kind == ND_WHILE){
@@ -520,6 +580,51 @@ class PARSER : public TOKEN<T>{
                 End_of_for(for_count);
                 return;
             }
+
+            if(node_in->kind == ND_BLOCK){
+                //Node *node_in_2 = node_in->block_next;
+                Node *node_in_2 = node_in;
+                //std::cerr<<"getting into the block\n";
+                int block_itr = 0;
+                // if(node_in->kind_2 == ND_BLOCK){
+                //     std::cerr<<"kind_2 is block\n";
+                // }
+                // else{
+                //     std::cerr<<"kind_2 is not block\n";
+                // }
+                while(node_in_2){
+                    //std::cerr<<"getting into while loop\n";
+                    // gen(node_in_2->lhs);
+                    // gen(node_in_2->rhs);
+                    if(block_itr==0){
+                        block_itr++;
+                        node_in_2 = node_in_2->block_next;
+                        if(node_in_2 == NULL){
+                            //std::cerr<<"now is NULL\n";
+                        }
+                        //std::cerr<<"finished first iter\n";
+                    }
+                    else{
+                        gen(node_in_2->block_node);
+                        //std::cerr<<"gen node finished\n";
+                        node_in_2 = node_in_2->block_next;
+                        // if(node_in_2 == NULL){
+                        //     std::cerr<<"now is NULL\n";
+                        // }
+                        //gen(node_in_2);
+                        //std::cerr<<"block iteration is: "<<block_itr<<"\n";
+                        //return;
+                        block_itr++;
+                    }
+                    
+                }
+                //std::cerr<<"get out of while\n";
+                return;
+            }
+            // if(node_in->kind == ND_BLOCK_START){
+                
+            // }
+
             gen(node_in->lhs);
             gen(node_in->rhs);
             
@@ -577,7 +682,11 @@ class PARSER : public TOKEN<T>{
                 break;
             }
 
+            
+
             std::cout<<"    push rax\n";
+
+            
         }
 
         void stack_gen(){
@@ -590,10 +699,12 @@ class PARSER : public TOKEN<T>{
             //     gen(code[i++]);
             //     std::cout<<"    pop rax\n";
             // }
+            //std::cerr<<"parsing is ok\n";
             for(int i=0; i<end; i++){
                 //std::cerr<<"check: "<<i<<std::endl;
                 gen(code[i]);
                 std::cout<<"    pop rax\n";
+                //std::cerr<<"finished expression "<<i<<"\n";
             }
             //std::cout<<"check: now is ok"<<std::endl;
             // gen(code[0]);
