@@ -53,4 +53,10 @@ void End_of_for(int count){
     std::cout<<"    jmp .Lbeginfor"<<count<<"\n";
     std::cout<<"  .Lendfor"<<count<<":\n";
 }
+
+void End_of_deref(){
+    std::cout<<"    pop rax\n";
+    std::cout<<"    mov rax, [rax]\n";
+    std::cout<<"    push rax\n";
+}
 #endif

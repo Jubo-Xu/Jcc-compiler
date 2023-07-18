@@ -36,6 +36,8 @@ class PARSER : public TOKEN<T>{
             ND_BLOCK, // {}
             // ND_BLOCK_START, // {
             // ND_BLOCK_END, // }
+            ND_DEREF, // *
+            ND_ADDR, // &
         } NodeKind;
 
         struct Node{
@@ -150,6 +152,8 @@ class PARSER : public TOKEN<T>{
             add        = mul ("+" mul | "-" mul)*
             mul        = unary ("*" unary | "/" unary)*
             unary      = ("+" | "-")? primary
+                         | "*" unary
+                         | "&" unary
             primary    = num | ident | "(" expr ")"
         */
         template <typename Func>
@@ -406,10 +410,30 @@ class PARSER : public TOKEN<T>{
         Node *unary(){
             char plus = '+';
             char minus = '-';
+            char deref = '*';
             if(this->consume(&plus))
                 return primary();
             if(this->consume(&minus))
                 return new_node(ND_SUB, new_node_num(0), primary());
+            // if(this->consume_deref()){
+            //     std::cerr<<"getting into the deref\n";
+            //     Node *node_unary = new Node();
+            //     node_unary->kind = ND_DEREF;
+            //     node_unary->lhs = unary();
+            //     return node_unary;
+            // }
+            if(this->consume(&deref)){
+                Node *node_unary = new Node();
+                node_unary->kind = ND_DEREF;
+                node_unary->lhs = unary();
+                return node_unary;
+            }
+            if(this->consume_addr()){
+                Node *node_unary = new Node();
+                node_unary->kind = ND_ADDR;
+                node_unary->lhs = unary();
+                return node_unary;
+            }
             return primary();
         }
 
@@ -619,6 +643,18 @@ class PARSER : public TOKEN<T>{
                     
                 }
                 //std::cerr<<"get out of while\n";
+                return;
+            }
+
+            if(node_in->kind == ND_ADDR){
+                gen_lval(node_in->lhs);
+                return;
+            }
+
+            if(node_in->kind == ND_DEREF){
+                //std::cout<<"    pop rax\n";
+                gen(node_in->lhs);
+                End_of_deref();
                 return;
             }
             // if(node_in->kind == ND_BLOCK_START){

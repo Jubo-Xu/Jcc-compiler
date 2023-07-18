@@ -45,4 +45,5 @@ assert 3 "b=0; for(a=0; a<3; a=a+1) b=b +1; return b;"
 assert 3 "a=1; if(a==1){c=1; d = 2; b = c+d;} else{b = 1;} return b;"
 assert 3 "a=1; if(a==2){b=1; c=2; d = b+c;} else{if(a>2){d=4;}else{b=1; c=2; d= b*c+1;}} return d;"
 assert 3 "a=1; if(a==2){b=1; if(b==1){d=b;}else{c = 2; d=b*c;}} else{if(a>2){d=4;}else{b=1; c=2; d= b*c+1;}} return d;"
+assert 3 "a=3; b = &a; return *b;"
 echo OK

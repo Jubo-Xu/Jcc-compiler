@@ -20,11 +20,13 @@ typedef enum{
     TK_ELSE,
     TK_WHILE,
     TK_FOR,
+    TK_ADDR,
 } TokenKind;
 
 //typedef struct Token Token;
 struct Token{
     TokenKind kind;
+    bool DEREF = true;
     Token *next;
     int val;
     char *str;
@@ -282,7 +284,16 @@ class TOKEN{
                     continue;
                 }
 
-                
+                if(*p == '&' && is_alnum(p+1)){
+                    Token *tok = new Token();
+                    tok->kind = TK_ADDR;
+                    tok->str = p;
+                    tok->len = 1;
+                    cur->next = tok;
+                    cur = cur->next;
+                    p++;
+                    continue;
+                }
 
                 
 
@@ -432,6 +443,10 @@ class TOKEN{
             if(token->kind != TK_IDENT){
                 return false;
             }
+            Token *tmp = token->next;
+            if(tmp->str[0] == '*'){
+                tmp->DEREF = false;
+            }
             // std::cerr<<"iteration is: "<<iter_of_rval<<std::endl;
             // std::cerr<<"check ident yes"<<std::endl;
             return true;
@@ -540,6 +555,23 @@ class TOKEN{
             return true;
         }
 
+        bool consume_deref(){
+            if(token->kind == TK_OPERATOR && token->len == 1 && token->str[0] == '*' && token->DEREF == true){
+                token = token->next;
+                pos++;
+                return true;
+            }
+            return false;
+        }
+
+        bool consume_addr(){
+            if(token->kind != TK_ADDR || token->len != 1 || token->str[0] != '&')
+                return false;
+            token = token->next;
+            pos++;
+            return true;
+        }
+
         void expect(char op){
             // try {
             //     if(token->kind != TK_OPERATOR || token->str[0] != op)
@@ -582,6 +614,10 @@ class TOKEN{
             if(token->kind != TK_NUM)
                 error_at(token->str, "not a number");
             T val = token->val;
+            Token *tmp = token->next;
+            if(tmp->str[0] == '*'){
+                tmp->DEREF = false;
+            }
             token = token->next;
             pos++;
             return val;
